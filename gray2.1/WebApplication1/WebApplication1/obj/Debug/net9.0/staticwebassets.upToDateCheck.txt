@@ -1,0 +1,6 @@
+wwwroot\base.html
+wwwroot\README.md
+wwwroot\styles.css
+C:\Users\graym\source\repos\gray2.1\WebApplication1\WebApplication1\wwwroot\base.html
+C:\Users\graym\source\repos\gray2.1\WebApplication1\WebApplication1\wwwroot\README.md
+C:\Users\graym\source\repos\gray2.1\WebApplication1\WebApplication1\wwwroot\styles.css
