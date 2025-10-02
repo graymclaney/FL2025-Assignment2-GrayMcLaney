@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- AzSearch CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@microsoft/azsearch.js@0.0.21/dist/AzSearch.css">
+
+    <!-- jQuery UI CSS (for the time dialog) -->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.3/themes/base/jquery-ui.css">
+
+    <!-- Your styles -->
+    <link rel="stylesheet" href="styles.css">
+
+    <title>NestQuest Finder</title>
+
+    <!-- small inline tweaks you already had -->
+    <style>
+        .searchResults__result h4 {
+            margin-top: 0;
+            text-transform: uppercase;
+        }
+
+        .searchResults__result .resultDescription {
+            margin: 0.5em 0 0 0;
+        }
+
+        .navbar-brand.pagelabel {
+            cursor: pointer;
+        }
+        /* ADDED: tiny polish for Lucky button if you didn't put it in styles.css */
+        #luckyBtn {
+            font-weight: 700;
+            border: 0;
+            border-radius: 999px;
+            box-shadow: 0 6px 18px rgba(245,158,11,.35);
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+
+            #luckyBtn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 10px 24px rgba(245,158,11,.45);
+            }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <nav class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                            data-target="#facetPanel" aria-expanded="false" aria-controls="navbar">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+                    </button>
+
+                    <div class="row">
+                        <div class="col-md-2 pagelabel">
+                            <!-- Click this to cycle background images -->
+                            <a id="siteTitle" class="navbar-brand pagelabel" href="#">NestQuest Finder</a>
+                        </div>
+
+                        <div id="searchBox" class="col-md-8 col-sm-8 col-xs-6"></div>
+
+                        <!-- Buttons -->
+                        <div class="col-sm-2 col-xs-6 text-right" style="padding-top:8px;">
+                            <button id="showTimeBtn" type="button" class="btn btn-info navbar-btn">Show Time</button>
+                            <!-- ADDED: Lucky button -->
+                            <button id="luckyBtn" type="button" class="btn btn-warning navbar-btn" style="margin-left:6px;">
+                                I’m Feeling Lucky
+                            </button>
+                        </div>
+
+                        <div id="navbar" class="navbar-collapse collapse"></div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="container-fluid" style="margin-top:70px;">
+            <div class="row">
+                <div id="facetPanel" class="col-sm-3 col-md-3 sidebar collapse">
+                    <div id="clearFilters"></div>
+                    <ul class="nav nav-sidebar">
+                        <div class="panel panel-primary behclick-panel">
+                        <li><div id="bedsFacet"></div></li>
+                        <li><div id="bathsFacet"></div></li>
+                        <li><div id="sqftFacet"></div></li>
+                        <li><div id="daysOnMarketFacet"></div></li>
+                        <li><div id="statusFacet"></div></li>
+                        <li><div id="typeFacet"></div></li>
+                        <li><div id="cityFacet"></div></li>
+                        <li><div id="regionFacet"></div></li>
+                        <li><div id="postCodeFacet"></div></li>
+                        <li><div id="priceFacet"></div></li>
+                        <li><div id="tagsFacet"></div></li>
+                </div>
+                </ul>
+            </div>
+
+            <div class="col-sm-9 col-sm-offset-3 col-md-9 col-md-offset-3 results_section">
+                <div id="results" class="row placeholders"></div>
+                <div id="pager" class="row"></div>
+
+                <!-- Empty time div for dialog -->
+                <div id="time"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- JS: jQuery, Bootstrap -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <!-- jQuery UI (for dialog) -->
+    <script src="https://code.jquery.com/ui/1.13.3/jquery-ui.min.js"></script>
+
+    <!-- React/Redux (required by AzSearch bundle) -->
+    <script src="https://cdn.jsdelivr.net/react/15.5.0/react.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/react/15.5.0/react-dom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/redux/3.6.0/redux.min.js"></script>
+
+    <!-- AzSearch bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/azsearch.js@0.0.21/dist/AzSearch.bundle.js"></script>
+
+    <!-- Your app script -->
+    <script>
+    const serviceName = "https://gmclaneyfall25mis521.search.windows.net";
+    const dnsSuffix   = "search.windows.net";
+    const indexName   = "gmclaneyfall25mis521";
+    const apiKey      = "Qc8qiEkZHPRKg4mnhpSVhAOyNiG2s6S7rwcyOWRJ2tAzSeBm4bFd";
+    const apiVersion  = "2024-11-01-preview"; // not used directly by azsearch.js here
+
+    var automagic = new AzSearch.Automagic({
+        index: indexName, queryKey: apiKey, service: serviceName, dnsSuffix: dnsSuffix
+    });
+
+    const resultTemplate = `
+      <div class="col-xs-12 col-sm-3 col-md-3 result_img">
+        <img class="img-responsive result_img" src={{thumbnail}} alt="image not found" />
+      </div>
+      <div class="col-xs-12 col-sm-9 col-md-9">
+        <h4>{{city}}</h4>
+        <div class="resultDescription">{{{description}}}</div>
+      </div>`;
+
+    automagic.addResults("results", { count: true }, resultTemplate);
+    automagic.addPager("pager");
+
+    var suggestionsProcessor = function (results) {
+        return results.map(function (result) {
+            result.searchText = result["@search.text"];
+            return result;
+        });
+    };
+    automagic.store.setSuggestionsProcessor(suggestionsProcessor);
+
+    var suggestionsTemplate = `<p> {{number}} {{street}} {{city}} {{region}} {{countryCode}} </p> {{{searchText}}}`;
+
+    automagic.addSearchBox("searchBox",
+        {
+            highlightPreTag: "<b>",
+            highlightPostTag: "</b>",
+            suggesterName: "sg",
+            select: "number,street,city,region,countryCode"
+        },
+        "",
+        suggestionsTemplate
+    );
+
+    automagic.addRangeFacet("bedsFacet", "beds", "number", 0, 1000000);
+    automagic.addRangeFacet("bathsFacet", "baths", "number", 0, 1000000);
+    automagic.addRangeFacet("sqftFacet", "sqft", "number", 0, 1000000);
+    automagic.addRangeFacet("daysOnMarketFacet", "daysOnMarket", "number", 0, 1000000);
+    automagic.addCheckboxFacet("statusFacet", "status", "string");
+    automagic.addCheckboxFacet("typeFacet", "type", "string");
+    automagic.addCheckboxFacet("cityFacet", "city", "string");
+    automagic.addCheckboxFacet("regionFacet", "region", "string");
+    automagic.addCheckboxFacet("postCodeFacet", "postCode", "string");
+    automagic.addRangeFacet("priceFacet", "price", "number", 0, 1000000);
+    automagic.addCheckboxFacet("tagsFacet", "tags", "collection");
+
+    automagic.addClearFiltersButton("clearFilters");
+
+
+        (function () {
+            const bgImages = [
+                "https://plus.unsplash.com/premium_photo-1755097117493-7d33670c8f16?q=80&w=1600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1759350075133-d8dab3dcafc3?q=80&w=1600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1759401091238-ce8b8fe68cb1?q=80&w=1600&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1758723208958-c18fa48aaff3?q=80&w=1600&auto=format&fit=crop"
+            ];
+            let bgIndex = 0;
+            let timerId = null;
+            const INTERVAL_MS = 5000;
+
+            function applyBackground(url) {
+                $("#facetPanel").fadeTo(150, 0.0, function () {
+                    $(this).css({
+                        "background-image": "url('" + url + "')",
+                        "background-size": "cover",
+                        "background-position": "center"
+                    }).fadeTo(200, 1);
+                });
+            }
+
+            function nextImage() {
+                bgIndex = (bgIndex + 1) % bgImages.length;
+                applyBackground(bgImages[bgIndex]);
+            }
+
+            function startAutoCycle() {
+                stopAutoCycle();
+                timerId = setInterval(nextImage, INTERVAL_MS);
+            }
+
+            function stopAutoCycle() {
+                if (timerId) {
+                    clearInterval(timerId);
+                    timerId = null;
+                }
+            }
+
+            $("#siteTitle").on("click", function (e) {
+                e.preventDefault();
+                nextImage();
+                startAutoCycle();
+            });
+
+            $("#facetPanel").on("mouseenter", stopAutoCycle)
+                .on("mouseleave", startAutoCycle);
+
+
+            startAutoCycle();
+        })();
+
+    (function () {
+        $("#time").dialog({
+            autoOpen: false,
+            modal: true,
+            title: "Current Time",
+            width: 320,
+            resizable: false
+        });
+
+        function getCurrentTimeHHMM() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mm = String(now.getMinutes()).padStart(2, "0");
+            return hh + ":" + mm;
+        }
+
+        $("#showTimeBtn").on("click", function () {
+            $("#time").text(getCurrentTimeHHMM());
+            $("#time").dialog("open");
+        });
+    })();
+
+    (function () {
+        $("#luckyBtn").on("click", function () {
+            const $cards = $("#results .searchResults__result");
+            if ($cards.length === 0) {
+                alert("Run a search first, then click Lucky!");
+                return;
+            }
+            const randomIndex = Math.floor(Math.random() * $cards.length);
+            const $one = $cards.eq(randomIndex).clone();
+
+            $("#results").fadeOut(120, function () {
+                $(this).empty().append($one).fadeIn(180);
+            });
+            $("#pager").fadeOut(120);
+        });
+    })();
+    </script>
+</body>
+</html>
