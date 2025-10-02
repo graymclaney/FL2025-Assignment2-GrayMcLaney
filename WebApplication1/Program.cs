@@ -1,12 +1,21 @@
+using Microsoft.AspNetCore.Builder;
+
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-// Serve files from wwwroot
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    DefaultFileNames = new List<string> { "base.html" }
+});
 app.UseStaticFiles();
 
-// Optional: if you want hitting "/" to load a default file automatically.
-// app.UseDefaultFiles(); // looks for index.html, default.html, etc.
+
+// Serve everything in wwwroot (e.g., /base.html, /styles.css, images, JS)
+app.UseStaticFiles();
+
+// (Optional) keep a quick health endpoint
+app.MapGet("/ping", () => "pong");
 
 app.Run();

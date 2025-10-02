@@ -131,10 +131,10 @@
 
     <!-- Your app script -->
     <script>
-    const serviceName = "https://gmclaneyfall25mis521.search.windows.net";
+    const serviceName = "gmclaneyfall25mis521";
     const dnsSuffix   = "search.windows.net";
-    const indexName   = "gmclaneyfall25mis521";
-    const apiKey      = "Qc8qiEkZHPRKg4mnhpSVhAOyNiG2s6S7rwcyOWRJ2tAzSeBm4bFd";
+    const indexName = "realestate-us-sample-index";
+    const apiKey = "6dqUPHModc8gdExYfdghnYzVESy4ZFNAeZD6DeRyfDAzSeDPdiBV";
     const apiVersion  = "2024-11-01-preview"; // not used directly by azsearch.js here
 
     var automagic = new AzSearch.Automagic({
@@ -163,16 +163,11 @@
 
     var suggestionsTemplate = `<p> {{number}} {{street}} {{city}} {{region}} {{countryCode}} </p> {{{searchText}}}`;
 
-    automagic.addSearchBox("searchBox",
-        {
+        automagic.addSearchBox("searchBox", {
+            searchOnChange: false,       // type then press Enter
             highlightPreTag: "<b>",
-            highlightPostTag: "</b>",
-            suggesterName: "sg",
-            select: "number,street,city,region,countryCode"
-        },
-        "",
-        suggestionsTemplate
-    );
+            highlightPostTag: "</b>"
+        });
 
     automagic.addRangeFacet("bedsFacet", "beds", "number", 0, 1000000);
     automagic.addRangeFacet("bathsFacet", "baths", "number", 0, 1000000);
@@ -251,7 +246,7 @@
 
         function getCurrentTimeHHMM() {
             const now = new Date();
-            const hh = String(now.getHours()).padStart(2, "0");
+            const hh = String(now.getHours()).padStart(2, "0"); 
             const mm = String(now.getMinutes()).padStart(2, "0");
             return hh + ":" + mm;
         }
