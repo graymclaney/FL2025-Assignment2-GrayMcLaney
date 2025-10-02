@@ -12,7 +12,6 @@ app.UseDefaultFiles(new DefaultFilesOptions
 app.UseStaticFiles();
 
 
-// Serve everything in wwwroot (e.g., /base.html, /styles.css, images, JS)
 app.UseStaticFiles();
 
 // (Optional) keep a quick health endpoint
